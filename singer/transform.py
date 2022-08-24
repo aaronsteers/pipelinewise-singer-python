@@ -43,8 +43,10 @@ class SchemaMismatch(Exception):
 
         else:
             estrs = [e.tostr() for e in errors]
-            msg = "Errors during transform\n\t{}".format("\n\t".join(estrs))
-            msg += "\n\n\nErrors during transform: [{}]".format(", ".join(estrs))
+            msg = (
+                "Errors during transform\n\t{}".format("\n\t".join(estrs))
+                + f'\n\n\nErrors during transform: [{", ".join(estrs)}]'
+            )
 
         super().__init__(msg)
 
@@ -66,17 +68,17 @@ class Error:
         path = ".".join(map(str, self.path))
         if self.schema:
             if self.logging_level >= logging.INFO:
-                msg = "data does not match {}".format(self.schema)
+                msg = f"data does not match {self.schema}"
             else:
-                msg = "does not match {}".format(self.schema)
+                msg = f"does not match {self.schema}"
         else:
             msg = "not in schema"
 
-        if self.logging_level >= logging.INFO:
-            output = "{}: {}".format(path, msg)
-        else:
-            output = "{}: {} {}".format(path, self.data, msg)
-        return output
+        return (
+            f"{path}: {msg}"
+            if self.logging_level >= logging.INFO
+            else f"{path}: {self.data} {msg}"
+        )
 
 
 class Transformer:
@@ -161,10 +163,9 @@ class Transformer:
             success, transformed_data = self._transform(data, typ, schema, path)
             if success:
                 return success, transformed_data
-        else: # pylint: disable=useless-else-on-loop
-            # exhaused all types and didn't return, so we failed :-(
-            self.errors.append(Error(path, data, schema, logging_level=LOGGER.level))
-            return False, None
+        # exhaused all types and didn't return, so we failed :-(
+        self.errors.append(Error(path, data, schema, logging_level=LOGGER.level))
+        return False, None
 
     def _transform_anyof(self, data, schema, path):
         subschemas = schema['anyOf']
@@ -172,10 +173,9 @@ class Transformer:
             success, transformed_data = self.transform_recur(data, subschema, path)
             if success:
                 return success, transformed_data
-        else: # pylint: disable=useless-else-on-loop
-            # exhaused all schemas and didn't return, so we failed :-(
-            self.errors.append(Error(path, data, schema, logging_level=LOGGER.level))
-            return False, None
+        # exhaused all schemas and didn't return, so we failed :-(
+        self.errors.append(Error(path, data, schema, logging_level=LOGGER.level))
+        return False, None
 
     def _transform_object(self, data, schema, path, pattern_properties):
         # We do not necessarily have a dict to transform here. The schema's
@@ -234,32 +234,26 @@ class Transformer:
 
         if self.integer_datetime_fmt == NO_INTEGER_DATETIME_PARSING:
             return string_to_datetime(value)
-        else:
-            try:
-                if self.integer_datetime_fmt == UNIX_SECONDS_INTEGER_DATETIME_PARSING:
-                    return unix_seconds_to_datetime(value)
-                else:
-                    return unix_milliseconds_to_datetime(value)
-            except:
-                return string_to_datetime(value)
+        try:
+            return (
+                unix_seconds_to_datetime(value)
+                if self.integer_datetime_fmt
+                == UNIX_SECONDS_INTEGER_DATETIME_PARSING
+                else unix_milliseconds_to_datetime(value)
+            )
+
+        except:
+            return string_to_datetime(value)
 
     def _transform(self, data, typ, schema, path):
         if self.pre_hook:
             data = self.pre_hook(data, typ, schema)
 
         if typ == "null":
-            if data is None or data == "":
-                return True, None
-            else:
-                return False, None
-
+            return (True, None) if data is None or data == "" else (False, None)
         elif schema.get("format") == "date-time":
             data = self._transform_datetime(data)
-            if data is None:
-                return False, None
-
-            return True, data
-
+            return (False, None) if data is None else (True, data)
         elif typ == "object":
             # Objects do not necessarily specify properties
             return self._transform_object(data,
@@ -271,14 +265,13 @@ class Transformer:
             return self._transform_array(data, schema["items"], path)
 
         elif typ == "string":
-            if data is not None:
-                try:
-                    return True, str(data)
-                except:
-                    return False, None
-            else:
+            if data is None:
                 return False, None
 
+            try:
+                return True, str(data)
+            except:
+                return False, None
         elif typ == "integer":
             if isinstance(data, str):
                 data = data.replace(",", "")

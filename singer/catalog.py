@@ -126,10 +126,14 @@ class Catalog():
         json.dump(self.to_dict(), sys.stdout, indent=2)
 
     def get_stream(self, tap_stream_id):
-        for stream in self.streams:
-            if stream.tap_stream_id == tap_stream_id:
-                return stream
-        return None
+        return next(
+            (
+                stream
+                for stream in self.streams
+                if stream.tap_stream_id == tap_stream_id
+            ),
+            None,
+        )
 
     def _shuffle_streams(self, state):
         currently_syncing = get_currently_syncing(state)
@@ -137,11 +141,15 @@ class Catalog():
         if currently_syncing is None:
             return self.streams
 
-        matching_index = 0
-        for i, catalog_entry in enumerate(self.streams):
-            if catalog_entry.tap_stream_id == currently_syncing:
-                matching_index = i
-                break
+        matching_index = next(
+            (
+                i
+                for i, catalog_entry in enumerate(self.streams)
+                if catalog_entry.tap_stream_id == currently_syncing
+            ),
+            0,
+        )
+
         top_half = self.streams[matching_index:]
         bottom_half = self.streams[:matching_index]
         return top_half + bottom_half

@@ -231,7 +231,7 @@ class TestTransform(unittest.TestCase):
         success, transformed_data = trans.transform_recur(data, schema, [])
         self.assertTrue(success)
         self.assertDictEqual({"good_property": "expected data"}, transformed_data)
-        self.assertSetEqual(set(["bad_property"]), trans.removed)
+        self.assertSetEqual({"bad_property"}, trans.removed)
         self.assertListEqual([], trans.errors)
 
     def test_unix_seconds_to_datetime(self):

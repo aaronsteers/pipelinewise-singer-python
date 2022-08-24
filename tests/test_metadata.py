@@ -4,7 +4,7 @@ from singer.metadata import get_standard_metadata
 
 def make_expected_metadata(base_obj, dict_of_extras):
     metadata_value = {**base_obj}
-    metadata_value.update(dict_of_extras)
+    metadata_value |= dict_of_extras
 
     return [
         {

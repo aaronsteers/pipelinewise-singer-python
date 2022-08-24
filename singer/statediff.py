@@ -59,9 +59,7 @@ def diff(oldstate, newstate):
     for path in sorted(all_paths):
         if path in olddict:
             if path in newdict:
-                if olddict[path] == newdict[path]:
-                    pass # Don't emit anything if values are the same
-                else:
+                if olddict[path] != newdict[path]:
                     result.append(Change(path, olddict[path], newdict[path]))
             else:
                 result.append(Remove(path, olddict[path]))

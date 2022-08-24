@@ -116,7 +116,7 @@ class Counter():
     def __init__(self, metric, tags=None, log_interval=DEFAULT_LOG_INTERVAL):
         self.metric = metric
         self.value = 0
-        self.tags = tags if tags else {}
+        self.tags = tags or {}
         self.log_interval = log_interval
         self.logger = get_logger()
         self.last_log_time = time.time()
@@ -172,7 +172,7 @@ class Timer():  # pylint: disable=too-few-public-methods
     '''
     def __init__(self, metric, tags):
         self.metric = metric
-        self.tags = tags if tags else {}
+        self.tags = tags or {}
         self.logger = get_logger()
         self.start_time = None
 
@@ -186,10 +186,7 @@ class Timer():  # pylint: disable=too-few-public-methods
 
     def __exit__(self, exc_type, exc_value, traceback):
         if Tag.status not in self.tags:
-            if exc_type is None:
-                self.tags[Tag.status] = Status.succeeded
-            else:
-                self.tags[Tag.status] = Status.failed
+            self.tags[Tag.status] = Status.succeeded if exc_type is None else Status.failed
         log(self.logger, Point('timer', self.metric, self.elapsed(), self.tags))
 
 
@@ -233,9 +230,8 @@ def job_timer(job_type=None):
 
 def parse(line):
     '''Parse a Point from a log line and return it, or None if no data point.'''
-    match = re.match(r'^INFO METRIC: (.*)$', line)
-    if match:
-        json_str = match.group(1)
+    if match := re.match(r'^INFO METRIC: (.*)$', line):
+        json_str = match[1]
         try:
             raw = json.loads(json_str)
             return Point(

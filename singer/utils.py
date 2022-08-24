@@ -185,9 +185,8 @@ def parse_args(required_config_keys):
 
 
 def check_config(config, required_keys):
-    missing_keys = [key for key in required_keys if key not in config]
-    if missing_keys:
-        raise Exception("Config is missing required keys: {}".format(missing_keys))
+    if missing_keys := [key for key in required_keys if key not in config]:
+        raise Exception(f"Config is missing required keys: {missing_keys}")
 
 
 def backoff(exceptions, giveup):
@@ -213,10 +212,11 @@ def exception_is_4xx(exception):
     if exception.response is None:
         return False
 
-    if not hasattr(exception.response, "status_code"):
-        return False
-
-    return 400 <= exception.response.status_code < 500
+    return (
+        400 <= exception.response.status_code < 500
+        if hasattr(exception.response, "status_code")
+        else False
+    )
 
 
 def handle_top_exception(logger):
@@ -297,8 +297,4 @@ def should_sync_field(inclusion, selected, default=False):
 
     # at this point inclusion == "available"
     # selected could be None, otherwise use the value of selected
-    if selected is not None:
-        return selected
-
-    # if there was no selected value, use the default
-    return default
+    return selected if selected is not None else default

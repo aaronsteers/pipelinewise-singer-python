@@ -60,9 +60,9 @@ class Schema():  # pylint: disable=too-many-instance-attributes
         return json.dumps(self.to_dict())
 
     def __repr__(self):
-        pairs = [k + '=' + repr(v) for k, v in self.__dict__.items()]
+        pairs = [f'{k}={repr(v)}' for k, v in self.__dict__.items()]
         args = ', '.join(pairs)
-        return 'Schema(' + args + ')'
+        return f'Schema({args})'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
